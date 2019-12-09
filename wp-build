@@ -1,0 +1,73 @@
+#!/bin/bash
+
+#note: must be run from root of file
+
+# check if help's been called
+if [ "$1" == "--help" ] || [ "$1" == "-h" ]
+then
+	/bin/bash functions/help.sh
+fi
+
+# run the digital ocean droplet builder
+if [ "$1" == "make-droplet" ] || [ "$1" == "-d" ]
+then
+	/bin/bash functions/make-droplet.sh "$2"
+	
+	exit 0
+	
+# init the project
+elif [ "$1" == "init" ] || [ "$1" == "-i" ] 
+then
+	# Cheeck if IP exists. If not, run the check funtion until it does
+	/bin/bash functions/check-image.sh
+	IP=`cat data/local/IP`
+	until [ -n "$IP" ]
+	do
+		sleep 5s
+		/bin/bash functions/check-image.sh
+		IP=`cat data/local/IP`
+	done
+
+	# run the wp-installer script
+	cat functions/init.sh | ssh "root@$IP"
+
+	# add the new user (prompts for password)
+	cat functions/add-it.sh | ssh "root@$IP"
+
+	printf "Site created. Please finish installation \e]8;;http://$IP\e\\here\e]8;;\e\\"
+	echo $IP
+
+	exit 0
+
+# build the project locally/remotely
+elif [ "$1" == "build" ] || [ "$1" == "-b" ] 
+then
+	# create-theme: downloads and runs the theme templating node script
+	echo 'building theme...'
+	/bin/bash functions/create-theme.sh
+
+	# import-content: fills the WP site with the basic content saved in the wxr file
+	echo 'importing content...'
+	/bin/bash functions/import-content.sh
+
+	# upload-theme -- also builds it locally with npm install; npm run build; also makes git repo
+	echo "uploading theme..."
+	/bin/bash functions/upload-theme.sh
+	
+	# clean-directory -- ask about deleting del dir
+	/bin/bash functions/clean-directory.sh
+
+	exit 0
+
+# check if the image is built
+elif [ "$1" == "check-image" ] || [ "$1" == "-c" ]
+then 
+	/bin/bash functions/check-image.sh
+
+
+# test function, for debug/dev use
+elif [ "$1" == "test" ] || [ "$1" == "-t" ] 
+then
+	echo 'test'
+	exit 0
+fi

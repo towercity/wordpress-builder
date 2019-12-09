@@ -1,0 +1,7 @@
+.vscode/settings.json
+.DS_Store
+node_modules
+package-lock.json
+theme-files
+data/local
+del
